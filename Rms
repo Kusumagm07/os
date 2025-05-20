@@ -1,0 +1,77 @@
+#include <stdio.h>
+#include <math.h>
+
+#define MAX 10
+
+int n, exec[MAX], period[MAX], remaining[MAX];
+
+void get_input() {
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+    for (int i = 0; i < n; i++) {
+        printf("Process %d execution time: ", i + 1);
+        scanf("%d", &exec[i]);
+        printf("Process %d period: ", i + 1);
+        scanf("%d", &period[i]);
+        remaining[i] = exec[i];
+    }
+}
+
+int lcm(int a, int b) {
+    int temp = a;
+    while (1) {
+        if (temp % b == 0)
+            return temp;
+        temp += a;
+    }
+}
+
+int get_hyperperiod() {
+    int res = period[0];
+    for (int i = 1; i < n; i++)
+        res = lcm(res, period[i]);
+    return res;
+}
+
+void rate_monotonic(int total_time) {
+    float util = 0;
+    for (int i = 0; i < n; i++)
+        util += (float)exec[i] / period[i];
+
+    float bound = n * (pow(2, 1.0 / n) - 1);
+    printf("\nCPU Utilization = %.2f, Bound = %.2f\n", util, bound);
+    if (util > bound)
+        printf("Warning: May miss deadlines!\n");
+
+    printf("\nSchedule:\nTime: ");
+    for (int t = 0; t < total_time; t++) printf("%2d ", t);
+    printf("\nProc: ");
+    
+    for (int t = 0; t < total_time; t++) {
+        int selected = -1;
+        for (int i = 0; i < n; i++) {
+            if (remaining[i] > 0 && (selected == -1 || period[i] < period[selected]))
+                selected = i;
+        }
+
+        if (selected != -1) {
+            printf("P%d ", selected + 1);
+            remaining[selected]--;
+        } else {
+            printf("-- ");
+        }
+
+        for (int i = 0; i < n; i++) {
+            if ((t + 1) % period[i] == 0)
+                remaining[i] = exec[i];
+        }
+    }
+    printf("\n");
+}
+
+int main() {
+    get_input();
+    int total_time = get_hyperperiod();
+    rate_monotonic(total_time);
+    return 0;
+}
